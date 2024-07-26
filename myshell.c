@@ -92,9 +92,9 @@ void externalCom(char *args[]) {                // 外部コマンドを実行�
     exit(1);                                    //     非常事態，親を終了
   }
   if (pid==0) {                                 //   子プロセスなら
-    if (ifile!=NULL) {                          //   リダイレクト処理
+    if (ifile!=NULL && ofile==NULL) {           //   リダイレクト処理
       redirect(0, ifile, O_RDONLY);
-    } else if (ofile!=NULL) {
+    } else if (ifile==NULL && ofile!=NULL) {
       redirect(1, ofile, O_WRONLY|O_TRUNC|O_CREAT);
     }
     execvp(args[0], args);                      //     コマンドを実行
@@ -183,6 +183,11 @@ ls: >>: No such file or directory
 a.txt
 Command: ls>a.txt
 ls>a.txt: No such file or directory
+
+Command: chmod 000 a.txt
+Command: pwd > a.txt
+something is wrong
+
 Command: ls
 Makefile        README.md       README.pdf      a.txt           b.txt           myshell         myshell.c
 Command: hoge > c.txt
