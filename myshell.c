@@ -77,6 +77,12 @@ void redirect(int fd, char *path, int flag) {   // リダイレクト処理を�
   //        入力の場合 O_RDONLY
   //        出力の場合 O_WRONLY|O_TRUNC|O_CREAT
   //
+
+  close(fd);
+  if (open(path, flag, 0644) != fd) {
+    fprintf(stderr, "something is wrong\n");
+    exit(1);
+  }
 }
 
 void externalCom(char *args[]) {                // 外部コマンドを実行する
@@ -86,6 +92,11 @@ void externalCom(char *args[]) {                // 外部コマンドを実行�
     exit(1);                                    //     非常事態，親を終了
   }
   if (pid==0) {                                 //   子プロセスなら
+    if (ifile!=NULL && ofile==NULL) {           //   リダイレクト処理
+      redirect(0, ifile, O_RDONLY);
+    } else if (ifile==NULL && ofile!=NULL) {
+      redirect(1, ofile, O_WRONLY|O_TRUNC|O_CREAT);
+    }
     execvp(args[0], args);                      //     コマンドを実行
     perror(args[0]);
     exit(1);
@@ -130,3 +141,65 @@ int main() {
   return 0;
 }
 
+/*  動作テスト
+
+% make
+cc -D_GNU_SOURCE -Wall -std=c99 -o myshell myshell.c
+
+% ./myshell
+Command: ls
+Makefile        README.md       README.pdf      myshell         myshell.c
+Command: pwd > a.txt
+Command: cat a.txt
+/Users/Ryoma/Syspro/kadai12-i21murayama
+Command: cat < a.txt
+/Users/Ryoma/Syspro/kadai12-i21murayama
+Command: ls > b.txt /
+Command: cat b.txt
+Applications
+Library
+System
+Users
+Volumes
+bin
+cores
+dev
+etc
+home
+opt
+private
+sbin
+tmp
+usr
+var
+Command: echo > b.txt Hello World
+Command: cat b.txt
+Hello World
+Command: ^C
+
+% ./myshell
+Command: ls >> a.txt
+ls: >>: No such file or directory
+a.txt
+Command: ls>a.txt
+ls>a.txt: No such file or directory
+
+Command: chmod 000 a.txt
+Command: pwd > a.txt
+something is wrong
+
+Command: ls
+Makefile        README.md       README.pdf      a.txt           b.txt           myshell         myshell.c
+Command: hoge > c.txt
+hoge: No such file or directory
+Command: ls
+Makefile        README.pdf      b.txt           myshell
+README.md       a.txt           c.txt           myshell.c
+Command: echo aaa > c.txt
+Command: cat c.txt
+aaa
+Command: ls < c.txt
+Command: ls < d.txt
+something is wrong
+
+*/
